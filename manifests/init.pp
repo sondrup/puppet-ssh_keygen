@@ -43,18 +43,26 @@ define ssh_keygen (
     default => $filename,
   }
 
-  $type_opt = " -t ${type_real}"
-  if $bits { $bits_opt = " -b ${bits}" }
-  $filename_opt = " -f '${filename_real}'"
-  $n_passphrase_opt = " -N ''"
-  if $comment { $comment_opt = " -C '${comment}'" }
+  $type_opt = ['-t', $type_real]
+  $bits_opt = $bits ? {
+    undef   => [],
+    default => ['-b', $bits],
+  }
+  $filename_opt = ['-f', $filename_real]
+  $n_passphrase_opt = ['-N', '']
+  $comment_opt = $comment ? {
+    undef   => [],
+    default => ['-C', $comment],
+  }
   $options_opt = $options ? {
     undef   => undef,
     default => " ${options}",
   }
 
+  $module_opt = shell_join(flatten([$type_opt, $bits_opt, $filename_opt, $n_passphrase_opt, $comment_opt]))
+
   exec { "ssh_keygen-${name}":
-    command => "ssh-keygen${type_opt}${bits_opt}${filename_opt}${n_passphrase_opt}${comment_opt}${options_opt}",
+    command => "ssh-keygen ${module_opt}${options_opt}",
     user    => $user_real,
     creates => $filename_real,
   }
